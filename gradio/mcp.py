@@ -1,6 +1,7 @@
 import base64
 import contextlib
 import copy
+import string
 import html
 import json
 import os
@@ -569,6 +570,25 @@ class GradioMCPServer:
                 )
                 or endpoint_name.lstrip("/")
             )
+            api_name = getattr(block_fn, "api_name", None)
+            if isinstance(api_name, str) and api_name.strip():
+                # api_name defaults to the (sanitized) function name when not
+                # explicitly set, so only an api_name that differs from both
+                # the raw and the sanitized function name is an explicit
+                # override that the MCP tool name should follow.
+                sanitized = "".join(
+                    s
+                    for s in str(fn_name)
+                    if s not in set(string.punctuation) - {"-", "_"}
+                )
+                # Implicit api_names get a numeric suffix on collision, so
+                # compare against the suffix-stripped form as well.
+                stripped = re.sub(r"_\d+$", "", api_name)
+                if api_name not in (fn_name, sanitized) and stripped not in (
+                    fn_name,
+                    sanitized,
+                ):
+                    fn_name = api_name
             tool_name = self.tool_prefix + fn_name
             tool_name = self.valid_and_unique_tool_name(
                 tool_name, set(tool_to_endpoint.keys())

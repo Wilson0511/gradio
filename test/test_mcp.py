@@ -28,6 +28,20 @@ def test_get_block_fn_from_tool_name(test_mcp_app):
     assert result is None
 
 
+def test_tool_name_uses_explicit_api_name():
+    def _search_impl(x):
+        return x
+
+    with gr.Blocks() as app:
+        tb = gr.Textbox()
+        out = gr.Textbox()
+        tb.submit(_search_impl, tb, out, api_name="search")
+
+    server = GradioMCPServer(app)
+    assert list(server.tool_to_endpoint.keys()) == ["search"]
+    assert server.tool_to_endpoint["search"] == "/search"
+
+
 def test_generate_tool_names_correctly_for_interfaces():
     def echo(x):
         return x
